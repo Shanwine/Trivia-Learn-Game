@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trivia Learning Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .container { width: 100%; max-width: 700px; padding: 20px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* HOME */
+    .home-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    .home-card h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(to right, #e94560, #f39c12);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .home-card p { color: rgba(255,255,255,0.6); margin-bottom: 30px; }
+    .mode-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+    .mode-btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .mode-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .btn-trivia { background: linear-gradient(135deg, #e94560, #c0392b); color: white; }
+    .btn-puzzle { background: linear-gradient(135deg, #0f3460, #533483); color: white; }
+
+    /* QUIZ HEADER */
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+    .score-box, .progress-box {
+      background: rgba(255,255,255,0.1);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+    .quit-btn {
+      padding: 8px 18px;
+      background: rgba(231,76,60,0.2);
+      border: 1px solid rgba(231,76,60,0.5);
+      color: #e74c3c;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .quit-btn:hover { background: rgba(231,76,60,0.4); }
+
+    /* PROGRESS BAR */
+    .progress-bar-wrap {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      height: 6px;
+      margin-bottom: 20px;
+    }
+    .progress-bar-fill {
+      height: 6px;
+      border-radius: 10px;
+      background: linear-gradient(to right, #e94560, #f39c12);
+      transition: width 0.4s ease;
+    }
+
+    /* QUESTION */
+    .category-label {
+      font-size: 0.85rem;
+      color: #e94560;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .question-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 20px;
+    }
+    .question-text { font-size: 1.2rem; font-weight: 600; line-height: 1.5; }
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .option-btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .option-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.15);
+      border-color: #e94560;
+    }
+    .option-btn.correct { background: rgba(39,174,96,0.3); border-color: #27ae60; }
+    .option-btn.wrong   { background: rgba(231,76,60,0.3);  border-color: #e74c3c; }
+    .option-btn:disabled { cursor: not-allowed; }
+
+    .explanation-box {
+      background: rgba(233,69,96,0.1);
+      border: 1px solid rgba(233,69,96,0.3);
+      border-radius: 12px;
+      padding: 15px 20px;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 15px;
+    }
+    .next-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #e94560, #c0392b);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .next-btn:hover { opacity: 0.85; }
+
+    /* RESULT */
+    .result-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    .result-emoji { font-size: 4rem; margin-bottom: 10px; }
+    .result-card h2 { font-size: 2rem; margin-bottom: 10px; }
+    .result-score { font-size: 3rem; font-weight: 700; color: #e94560; margin: 15px 0; }
+    .result-card p { color: rgba(255,255,255,0.6); margin-bottom: 25px; }
+    .result-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-outline {
+      padding: 12px 28px;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: transparent;
+      color: white;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.1); }
+
+    /* QUIT MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: #16213e;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 35px;
+      text-align: center;
+      max-width: 350px;
+      width: 90%;
+    }
+    .modal-box h3 { font-size: 1.4rem; margin-bottom: 10px; }
+    .modal-box p { color: rgba(255,255,255,0.6); margin-bottom: 25px; font-size: 0.95rem; }
+    .modal-buttons { display: flex; gap: 12px; justify-content: center; }
+    .btn-confirm-quit {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #e94560, #c0392b);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-cancel {
+      padding: 12px 24px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      color: white;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    /* WORD PUZZLE */
+    .puzzle-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .scrambled-word {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: #f39c12;
+      margin: 20px 0;
+    }
+    .hint-text { font-size: 0.9rem; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+    .puzzle-input {
+      width: 100%;
+      padding: 14px 20px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      color: white;
+      font-size: 1.1rem;
+      text-align: center;
+      letter-spacing: 3px;
+      outline: none;
+      margin-bottom: 15px;
+    }
+    .puzzle-input::placeholder { color: rgba(255,255,255,0.3); letter-spacing: 1px; }
+    .puzzle-input:focus { border-color: #f39c12; }
+    .puzzle-feedback {
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      display: none;
+    }
+    .puzzle-feedback.correct { background: rgba(39,174,96,0.2); color: #2ecc71; display: block; }
+    .puzzle-feedback.wrong   { background: rgba(231,76,60,0.2);  color: #e74c3c; display: block; }
+    .puzzle-buttons { display: flex; gap: 10px; }
+    .btn-check {
+      flex: 1; padding: 13px;
+      background: linear-gradient(135deg, #533483, #0f3460);
+      border: none; border-radius: 12px;
+      color: white; font-size: 1rem; font-weight: 600; cursor: pointer;
+    }
+    .btn-skip {
+      flex: 1; padding: 13px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px; color: white; font-size: 1rem; cursor: pointer;
+    }
+    .puzzle-progress {
+      text-align: center;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="home-card">
+      <h1>🎓 Trivia Learning Game</h1>
+      <p>Test your knowledge, solve puzzles, and have fun while learning!</p>
+      <div class="mode-buttons">
+        <button class="mode-btn btn-trivia" onclick="startTrivia()">🧠 Trivia Quiz</button>
+        <button class="mode-btn btn-puzzle" onclick="startPuzzle()">🔤 Word Puzzle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRIVIA -->
+  <div class="screen" id="screen-trivia">
+    <div class="quiz-header">
+      <div class="score-box">⭐ Score: <span id="score">0</span></div>
+      <div class="progress-box">Q <span id="q-num">1</span> / <span id="q-total">10</span></div>
+      <button class="quit-btn" onclick="confirmQuit('trivia')">✕ Quit</button>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="question-card">
+      <div class="category-label" id="q-category">General Knowledge</div>
+      <div class="question-text" id="q-text">Loading...</div>
+    </div>
+    <div class="options-grid" id="options-grid"></div>
+    <div class="explanation-box" id="explanation-box" style="display:none"></div>
+    <button class="next-btn" id="next-btn" style="display:none" onclick="nextQuestion()">Next Question →</button>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="screen-result">
+    <div class="result-card">
+      <div class="result-emoji" id="result-emoji">🏆</div>
+      <h2 id="result-title">Great Job!</h2>
+      <div class="result-score" id="result-score">0 / 100</div>
+      <p id="result-msg">Keep learning!</p>
+      <div class="result-buttons">
+        <button class="mode-btn btn-trivia" onclick="startTrivia()">🔄 Play Again</button>
+        <button class="btn-outline" onclick="showScreen('screen-home')">🏠 Home</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORD PUZZLE -->
+  <div class="screen" id="screen-puzzle">
+    <div class="quiz-header">
+      <div class="score-box">⭐ Score: <span id="puzzle-score">0</span></div>
+      <div class="puzzle-progress" style="margin:0">Puzzle <span id="puzzle-num">1</span> of <span id="puzzle-total">8</span></div>
+      <button class="quit-btn" onclick="confirmQuit('puzzle')">✕ Quit</button>
+    </div>
+    <div class="progress-bar-wrap" style="margin-top:15px">
+      <div class="progress-bar-fill" id="puzzle-progress-fill" style="width:0%"></div>
+    </div>
+    <div class="puzzle-card">
+      <p style="color:rgba(255,255,255,0.6);margin-bottom:5px">Unscramble this word:</p>
+      <div class="scrambled-word" id="scrambled-display">??????</div>
+      <div class="hint-text" id="puzzle-hint">Hint: loading...</div>
+      <input class="puzzle-input" id="puzzle-input" type="text" placeholder="Type your answer..."/>
+      <div class="puzzle-feedback" id="puzzle-feedback"></div>
+      <div class="puzzle-buttons">
+        <button class="btn-check" onclick="checkPuzzle()">✔ Check</button>
+        <button class="btn-skip"  onclick="nextPuzzle()">Skip →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUZZLE RESULT -->
+  <div class="screen" id="screen-puzzle-result">
+    <div class="result-card">
+      <div class="result-emoji">🔤</div>
+      <h2>Puzzle Complete!</h2>
+      <div class="result-score" id="puzzle-final-score">0 / 80</div>
+      <p id="puzzle-result-msg">Keep practicing!</p>
+      <div class="result-buttons">
+        <button class="mode-btn btn-puzzle" onclick="startPuzzle()">🔄 Play Again</button>
+        <button class="btn-outline" onclick="showScreen('screen-home')">🏠 Home</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- QUIT MODAL -->
+<div class="modal-overlay" id="quit-modal">
+  <div class="modal-box">
+    <h3>⚠️ Quit Game?</h3>
+    <p>Are you sure you want to quit? Your current progress will be lost.</p>
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeQuitModal()">Cancel</button>
+      <button class="btn-confirm-quit" onclick="doQuit()">Yes, Quit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  ALL TRIVIA QUESTIONS (20 total)
+//  — shuffled every game so always different
+// ══════════════════════════════════════════
+const allQuestions = [
+  { category:"General Knowledge", question:"What is the capital city of the Philippines?", options:["Cebu","Manila","Davao","Quezon City"], answer:1, explanation:"Manila is the capital city of the Philippines, located on Luzon island." },
+  { category:"Science", question:"What is the chemical symbol for water?", options:["O2","CO2","H2O","HO"], answer:2, explanation:"Water is H2O — two hydrogen atoms bonded to one oxygen atom." },
+  { category:"Mathematics", question:"What is the value of π (pi) to two decimal places?", options:["3.12","3.14","3.16","3.18"], answer:1, explanation:"Pi (π) ≈ 3.14159. It is the ratio of a circle's circumference to its diameter." },
+  { category:"History", question:"Who is the national hero of the Philippines?", options:["Andres Bonifacio","Emilio Aguinaldo","Jose Rizal","Apolinario Mabini"], answer:2, explanation:"Jose Rizal is the national hero of the Philippines, known for his novels and peaceful advocacy." },
+  { category:"Technology", question:"What does HTML stand for?", options:["Hyper Text Markup Language","High Text Machine Language","Hyper Transfer Markup Logic","Home Tool Markup Language"], answer:0, explanation:"HTML stands for HyperText Markup Language — the standard language for creating web pages." },
+  { category:"Science", question:"How many planets are in our Solar System?", options:["7","8","9","10"], answer:1, explanation:"There are 8 planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune." },
+  { category:"Mathematics", question:"What is 15% of 200?", options:["20","25","30","35"], answer:2, explanation:"15% of 200 = (15 ÷ 100) × 200 = 30." },
+  { category:"General Knowledge", question:"Which ocean is the largest?", options:["Atlantic","Indian","Arctic","Pacific"], answer:3, explanation:"The Pacific Ocean is the largest and deepest ocean, covering more than 30% of Earth's surface." },
+  { category:"Technology", question:"What does CSS stand for?", options:["Creative Style Sheets","Cascading Style Sheets","Computer Style Syntax","Coded Style System"], answer:1, explanation:"CSS stands for Cascading Style Sheets — used to style and layout web pages." },
+  { category:"History", question:"In what year did the Philippines gain independence from the US?", options:["1944","1945","1946","1947"], answer:2, explanation:"The Philippines officially gained independence from the United States on July 4, 1946." },
+  { category:"Science", question:"What gas do plants absorb from the atmosphere?", options:["Oxygen","Nitrogen","Carbon Dioxide","Hydrogen"], answer:2, explanation:"Plants absorb carbon dioxide (CO2) during photosynthesis to produce food and oxygen." },
+  { category:"Mathematics", question:"What is the square root of 144?", options:["11","12","13","14"], answer:1, explanation:"√144 = 12, because 12 × 12 = 144." },
+  { category:"General Knowledge", question:"How many days are in a leap year?", options:["364","365","366","367"], answer:2, explanation:"A leap year has 366 days. It occurs every 4 years to keep the calendar aligned." },
+  { category:"Technology", question:"What does 'CPU' stand for?", options:["Central Process Unit","Central Processing Unit","Computer Processing Unit","Core Processing Unit"], answer:1, explanation:"CPU stands for Central Processing Unit — the brain of a computer." },
+  { category:"History", question:"Who wrote the Philippine national anthem 'Lupang Hinirang'?", options:["Jose Palma","Julian Felipe","Emilio Aguinaldo","Andres Bonifacio"], answer:0, explanation:"The lyrics of Lupang Hinirang were written by Jose Palma in 1899." },
+  { category:"Science", question:"What is the hardest natural substance on Earth?", options:["Gold","Iron","Diamond","Quartz"], answer:2, explanation:"Diamond is the hardest natural substance, rating 10 on the Mohs hardness scale." },
+  { category:"Mathematics", question:"What is 7 × 8?", options:["54","56","58","60"], answer:1, explanation:"7 × 8 = 56. A classic multiplication fact!" },
+  { category:"General Knowledge", question:"What is the largest continent by area?", options:["Africa","Europe","Asia","North America"], answer:2, explanation:"Asia is the largest continent, covering about 44.6 million km²." },
+  { category:"Technology", question:"What does 'URL' stand for?", options:["Universal Resource Locator","Uniform Resource Locator","United Resource Link","Uniform Reference Locator"], answer:1, explanation:"URL stands for Uniform Resource Locator — the web address of a page." },
+  { category:"History", question:"What is the oldest university in the Philippines?", options:["UP Manila","Ateneo de Manila","University of Santo Tomas","De La Salle University"], answer:2, explanation:"University of Santo Tomas (UST) was founded in 1611, making it the oldest university in Asia." },
+];
+
+// ══════════════════════════════════════════
+//  WORD PUZZLES (12 total, shuffled every game)
+// ══════════════════════════════════════════
+const allPuzzles = [
+  { word:"SCIENCE",   scrambled:"ENCEICS",   hint:"The study of the natural world" },
+  { word:"HISTORY",   scrambled:"THYIROS",   hint:"The study of past events" },
+  { word:"COMPUTER",  scrambled:"RUCEMOPT",  hint:"An electronic device for processing data" },
+  { word:"ALGEBRA",   scrambled:"GAARBEL",   hint:"A branch of mathematics using variables" },
+  { word:"BIOLOGY",   scrambled:"YLOGIOB",   hint:"The study of living organisms" },
+  { word:"LANGUAGE",  scrambled:"AGLANUGE",  hint:"A system of communication" },
+  { word:"GRAVITY",   scrambled:"TYVAGRI",   hint:"The force that pulls objects toward Earth" },
+  { word:"EDUCATION", scrambled:"DUTINOCEA", hint:"The process of learning and teaching" },
+  { word:"PHYSICS",   scrambled:"SCYPHIS",   hint:"The study of matter and energy" },
+  { word:"GEOMETRY",  scrambled:"OETYEMRG",  hint:"A branch of math about shapes and space" },
+  { word:"REPUBLIC",  scrambled:"CPILUBRE",  hint:"A form of government with elected leaders" },
+  { word:"NITROGEN",  scrambled:"RENITOGG",  hint:"The most abundant gas in Earth's atmosphere" },
+];
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let shuffledQuestions = [];
+let currentQ  = 0;
+let score     = 0;
+let answered  = false;
+let quitTarget = '';
+
+let shuffledPuzzles = [];
+let puzzleIndex = 0;
+let puzzleScore = 0;
+
+// ══════════════════════════════════════════
+//  UTILITY
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// Fisher-Yates shuffle
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ══════════════════════════════════════════
+//  QUIT MODAL
+// ══════════════════════════════════════════
+function confirmQuit(from) {
+  quitTarget = from;
+  document.getElementById('quit-modal').classList.add('show');
+}
+function closeQuitModal() {
+  document.getElementById('quit-modal').classList.remove('show');
+}
+function doQuit() {
+  closeQuitModal();
+  showScreen('screen-home');
+}
+
+// ══════════════════════════════════════════
+//  TRIVIA LOGIC
+// ══════════════════════════════════════════
+function startTrivia() {
+  // Shuffle all 20, pick first 10
+  shuffledQuestions = shuffle(allQuestions).slice(0, 10);
+  currentQ = 0;
+  score    = 0;
+  answered = false;
+  showScreen('screen-trivia');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const q = shuffledQuestions[currentQ];
+  answered = false;
+
+  document.getElementById('q-category').textContent         = q.category;
+  document.getElementById('q-text').textContent             = q.question;
+  document.getElementById('q-num').textContent              = currentQ + 1;
+  document.getElementById('q-total').textContent            = shuffledQuestions.length;
+  document.getElementById('score').textContent              = score;
+  document.getElementById('explanation-box').style.display  = 'none';
+  document.getElementById('next-btn').style.display         = 'none';
+
+  const pct = (currentQ / shuffledQuestions.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className   = 'option-btn';
+    btn.textContent = opt;
+    btn.onclick     = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+}
+
+function selectAnswer(index) {
+  if (answered) return;
+  answered = true;
+  const q    = shuffledQuestions[currentQ];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+  if (index === q.answer) {
+    btns[index].classList.add('correct');
+    score += 10;
+    document.getElementById('score').textContent = score;
+  } else {
+    btns[index].classList.add('wrong');
+    btns[q.answer].classList.add('correct');
+  }
+  const expBox = document.getElementById('explanation-box');
+  expBox.textContent   = '💡 ' + q.explanation;
+  expBox.style.display = 'block';
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= shuffledQuestions.length) {
+    showResult();
+  } else {
+    loadQuestion();
+  }
+}
+
+function showResult() {
+  showScreen('screen-result');
+  const total = shuffledQuestions.length * 10;
+  const pct   = (score / total) * 100;
+  document.getElementById('result-score').textContent = score + ' / ' + total;
+  let emoji, title, msg;
+  if      (pct >= 90) { emoji='🏆'; title='Outstanding!';    msg='Perfect! You are a trivia master!'; }
+  else if (pct >= 70) { emoji='🌟'; title='Great Job!';      msg='Really well done! Keep it up!'; }
+  else if (pct >= 50) { emoji='👍'; title='Good Effort!';    msg='Not bad! Keep studying and try again!'; }
+  else                { emoji='📚'; title='Keep Learning!';  msg="Don't give up! Review and try again!"; }
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent  = title;
+  document.getElementById('result-msg').textContent    = msg;
+}
+
+// ══════════════════════════════════════════
+//  WORD PUZZLE LOGIC
+// ══════════════════════════════════════════
+function startPuzzle() {
+  // Shuffle all 12, pick first 8
+  shuffledPuzzles = shuffle(allPuzzles).slice(0, 8);
+  puzzleIndex = 0;
+  puzzleScore = 0;
+  showScreen('screen-puzzle');
+  loadPuzzle();
+}
+
+function loadPuzzle() {
+  const p = shuffledPuzzles[puzzleIndex];
+  document.getElementById('scrambled-display').textContent = p.scrambled;
+  document.getElementById('puzzle-hint').textContent       = '💡 Hint: ' + p.hint;
+  document.getElementById('puzzle-num').textContent        = puzzleIndex + 1;
+  document.getElementById('puzzle-total').textContent      = shuffledPuzzles.length;
+  document.getElementById('puzzle-score').textContent      = puzzleScore;
+  document.getElementById('puzzle-input').value            = '';
+  document.getElementById('puzzle-input').disabled         = false;
+  document.getElementById('puzzle-input').focus();
+
+  const fb = document.getElementById('puzzle-feedback');
+  fb.className   = 'puzzle-feedback';
+  fb.textContent = '';
+
+  const pct = (puzzleIndex / shuffledPuzzles.length) * 100;
+  document.getElementById('puzzle-progress-fill').style.width = pct + '%';
+}
+
+function checkPuzzle() {
+  const p      = shuffledPuzzles[puzzleIndex];
+  const answer = document.getElementById('puzzle-input').value.trim().toUpperCase();
+  const fb     = document.getElementById('puzzle-feedback');
+  if (!answer) return;
+
+  document.getElementById('puzzle-input').disabled = true;
+
+  if (answer === p.word) {
+    fb.className   = 'puzzle-feedback correct';
+    fb.textContent = '✅ Correct! The word is "' + p.word + '"';
+    puzzleScore   += 10;
+    document.getElementById('puzzle-score').textContent = puzzleScore;
+    setTimeout(nextPuzzle, 1200);
+  } else {
+    fb.className   = 'puzzle-feedback wrong';
+    fb.textContent = '❌ Wrong! Try again or skip.';
+    document.getElementById('puzzle-input').disabled = false;
+    document.getElementById('puzzle-input').focus();
+  }
+}
+
+function nextPuzzle() {
+  puzzleIndex++;
+  if (puzzleIndex >= shuffledPuzzles.length) {
+    showPuzzleResult();
+  } else {
+    loadPuzzle();
+  }
+}
+
+function showPuzzleResult() {
+  showScreen('screen-puzzle-result');
+  const total = shuffledPuzzles.length * 10;
+  document.getElementById('puzzle-final-score').textContent = puzzleScore + ' / ' + total;
+  const pct = (puzzleScore / total) * 100;
+  let msg;
+  if      (pct >= 90) msg = '🏆 Amazing! You solved almost all words!';
+  else if (pct >= 60) msg = '🌟 Good job! Keep practicing your vocabulary!';
+  else                msg = '📖 Keep learning new words and try again!';
+  document.getElementById('puzzle-result-msg').textContent = msg;
+}
+
+// Enter key to check puzzle
+document.getElementById('puzzle-input').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') checkPuzzle();
+});
+</script>
+</body>
+</html>
